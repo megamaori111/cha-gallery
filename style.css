@@ -1,19 +1,9 @@
 body {
-  font-family: Arial;
-  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-  text-align: center;
+  margin: 0;
+  overflow: hidden;
+  background: black;
 }
 
-img {
-  width: 150px;
-  border-radius: 10px;
-  margin: 10px;
-}
-
-button {
-  padding: 10px;
-  margin: 5px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
+canvas {
+  display: block;
 }
