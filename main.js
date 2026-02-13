@@ -1,70 +1,140 @@
-const firebaseConfig = {
-  apiKey: "PASTE_YOURS",
-  authDomain: "PASTE_YOURS",
-  projectId: "PASTE_YOURS",
-  storageBucket: "PASTE_YOURS"
-};
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111111);
 
-firebase.initializeApp(firebaseConfig);
+// Camera
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0, 2, 5);
 
-const auth = firebase.auth();
-const db = firebase.firestore();
-const storage = firebase.storage();
+// Renderer
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("bg") });
+renderer.setSize(window.innerWidth, window.innerHeight);
 
-let user;
+// Light
+const light = new THREE.PointLight(0xffffff, 1);
+light.position.set(10, 10, 10);
+scene.add(light);
 
-// LOGIN
-function login() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider);
+// Floor
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(50, 50),
+  new THREE.MeshStandardMaterial({ color: 0x222222 })
+);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+// Walls
+function createWall(x, z, rotation) {
+  const wall = new THREE.Mesh(
+    new THREE.PlaneGeometry(10, 5),
+    new THREE.MeshStandardMaterial({ color: 0x333333 })
+  );
+  wall.position.set(x, 2.5, z);
+  wall.rotation.y = rotation;
+  scene.add(wall);
 }
 
-function anonLogin() {
-  auth.signInAnonymously();
+createWall(0, -10, 0);
+createWall(0, 10, Math.PI);
+createWall(-10, 0, Math.PI / 2);
+createWall(10, 0, -Math.PI / 2);
+
+// Art
+const loader = new THREE.TextureLoader();
+
+function addArt(url, x, z, rotation) {
+  const art = new THREE.Mesh(
+    new THREE.PlaneGeometry(3, 2),
+    new THREE.MeshBasicMaterial({ map: loader.load(url) })
+  );
+  art.position.set(x, 2.5, z);
+  art.rotation.y = rotation;
+  scene.add(art);
 }
 
-auth.onAuthStateChanged(u => {
-  user = u;
-  loadMemes();
+addArt("https://picsum.photos/400/300", 0, -9.9, 0);
+addArt("https://picsum.photos/401/300", -9.9, 0, Math.PI / 2);
+addArt("https://picsum.photos/402/300", 9.9, 0, -Math.PI / 2);
+
+
+// ==========================
+// 📱 TOUCH CONTROLS
+// ==========================
+
+let previousTouchDistance = null;
+
+// Get distance between two fingers
+function getTouchDistance(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+// ZOOM (pinch)
+document.addEventListener("touchmove", (e) => {
+  if (e.touches.length === 2) {
+    const distance = getTouchDistance(e.touches);
+
+    if (previousTouchDistance !== null) {
+      const delta = distance - previousTouchDistance;
+
+      // Move camera forward/backward
+      camera.translateZ(-delta * 0.01);
+    }
+
+    previousTouchDistance = distance;
+  }
 });
 
-// UPLOAD
-async function upload() {
-  const file = document.getElementById("file").files[0];
-  const ref = storage.ref().child("memes/" + file.name);
+// Reset when fingers lifted
+document.addEventListener("touchend", () => {
+  previousTouchDistance = null;
+});
 
-  await ref.put(file);
-  const url = await ref.getDownloadURL();
 
-  await db.collection("memes").add({
-    url,
-    owner: user.uid
-  });
+// ==========================
+// 👆 LOOK AROUND (1 finger)
+// ==========================
 
-  loadMemes();
+let lastX = null;
+let lastY = null;
+
+document.addEventListener("touchmove", (e) => {
+  if (e.touches.length === 1) {
+    const touch = e.touches[0];
+
+    if (lastX !== null && lastY !== null) {
+      const deltaX = touch.clientX - lastX;
+      const deltaY = touch.clientY - lastY;
+
+      camera.rotation.y -= deltaX * 0.005;
+      camera.rotation.x -= deltaY * 0.005;
+
+      // Clamp vertical rotation
+      camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+    }
+
+    lastX = touch.clientX;
+    lastY = touch.clientY;
+  }
+});
+
+document.addEventListener("touchend", () => {
+  lastX = null;
+  lastY = null;
+});
+
+
+// Animate
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
 }
 
-// LOAD
-async function loadMemes() {
-  const gallery = document.getElementById("gallery");
-  gallery.innerHTML = "";
+animate();
 
-  const snapshot = await db.collection("memes").get();
-
-  snapshot.forEach(doc => {
-    const data = doc.data();
-
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <img src="${data.url}">
-      <br>
-      <button onclick="trade('${doc.id}')">Trade</button>
-    `;
-
-    gallery.appendChild(div);
-  });
-}
-
-function trade(id) {
-  alert("Trading system coming next 🔥");
-}
+// Resize fix
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
