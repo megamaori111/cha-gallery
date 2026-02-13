@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CHA Gallery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <h1>🌈 CHA Gallery</h1>
+
+  <button onclick="login()">Google Login</button>
+  <button onclick="anonLogin()">Anonymous</button>
+
+  <h2>Upload Meme</h2>
+  <input type="file" id="file">
+  <button onclick="upload()">Upload</button>
+
+  <h2>Marketplace</h2>
+  <div id="gallery"></div>
+
+  <script src="main.js"></script>
+</body>
+</html>
